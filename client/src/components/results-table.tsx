@@ -37,6 +37,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
           <TableHeader className="bg-neutral-100 text-neutral-400">
             <TableRow>
               <TableHead className="py-3 px-4 font-medium">Airline</TableHead>
+              <TableHead className="py-3 px-4 font-medium">Date</TableHead>
               <TableHead className="py-3 px-4 font-medium">Departure</TableHead>
               <TableHead className="py-3 px-4 font-medium">Arrival</TableHead>
               <TableHead className="py-3 px-4 font-medium">Duration</TableHead>
@@ -60,6 +61,9 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
                   </div>
                 </TableCell>
                 <TableCell className="py-4 px-4">
+                  <div className="font-medium">{new Date(flight.departureDate).toLocaleDateString()}</div>
+                </TableCell>
+                <TableCell className="py-4 px-4">
                   <div className="font-medium">{flight.departureTime}</div>
                   <div className="text-sm text-neutral-300">{flight.origin}</div>
                 </TableCell>
@@ -74,18 +78,18 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
                   </div>
                 </TableCell>
                 <TableCell className="py-4 px-4">
-                  <div className="font-medium text-primary">${flight.price}</div>
+                  <div className="font-medium text-primary">₹{flight.price}</div>
                   {flight.priceChange && (
                     <div className={`text-xs ${flight.priceChange < 0 ? "text-success" : "text-error"}`}>
                       {flight.priceChange < 0 ? (
                         <span className="flex items-center">
                           <ArrowDown className="w-3 h-3 mr-1" />
-                          ${Math.abs(flight.priceChange)} (last week)
+                          ₹{Math.abs(flight.priceChange)} (last week)
                         </span>
                       ) : (
                         <span className="flex items-center">
                           <ArrowUp className="w-3 h-3 mr-1" />
-                          ${flight.priceChange} (last week)
+                          ₹{flight.priceChange} (last week)
                         </span>
                       )}
                     </div>
@@ -130,7 +134,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
                   className={currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""}
                 />
               </PaginationItem>
-              
+
               {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                 <PaginationItem key={page}>
                   <PaginationLink
@@ -141,7 +145,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
                   </PaginationLink>
                 </PaginationItem>
               ))}
-              
+
               <PaginationItem>
                 <PaginationNext 
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}

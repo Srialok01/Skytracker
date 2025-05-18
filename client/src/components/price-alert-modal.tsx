@@ -84,7 +84,7 @@ const PriceAlertModal: React.FC<PriceAlertModalProps> = ({
             <div className="flex justify-between items-center px-4 py-3 bg-neutral-100 rounded">
               <div>
                 <p className="text-sm text-neutral-300">Current lowest price</p>
-                <p className="font-medium text-primary text-lg">${flight.price}</p>
+                <p className="font-medium text-primary text-lg">₹{flight.price}</p>
               </div>
               <Plane className="text-neutral-300 text-xl" />
             </div>

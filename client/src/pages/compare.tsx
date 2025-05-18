@@ -316,8 +316,8 @@ const Compare: React.FC = () => {
                       <BarChart data={priceComparisonData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" />
-                        <YAxis tickFormatter={(value) => `$${value}`} />
-                        <Tooltip formatter={(value) => [`$${value}`, 'Average Price']} />
+                        <YAxis tickFormatter={(value) => `₹${value}`} />
+                        <Tooltip formatter={(value) => [`₹${value}`, 'Average Price']} />
                         <Legend />
                         <Bar dataKey="price" fill="hsl(var(--primary))" />
                       </BarChart>

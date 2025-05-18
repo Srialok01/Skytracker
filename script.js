@@ -66,51 +66,51 @@ document.addEventListener('DOMContentLoaded', () => {
   // Set default values for price range inputs
   document.getElementById('min-price').value = 1000;
   document.getElementById('max-price').value = 10000;
-  
+
   // Set up autocomplete for origin and destination fields
   setupAutocomplete('origin');
   setupAutocomplete('destination');
-  
+
   // Search form submission
   const searchForm = document.getElementById('flight-search-form');
   searchForm.addEventListener('submit', handleSearch);
-  
+
   // Price slider
   const priceSlider = document.getElementById('price-range');
   priceSlider.addEventListener('input', handlePriceChange);
-  
+
   // Reset filters button
   const resetFiltersBtn = document.getElementById('reset-filters');
   resetFiltersBtn.addEventListener('click', resetFilters);
-  
+
   // Retry button for errors
   const retryBtn = document.getElementById('retry-btn');
   retryBtn.addEventListener('click', () => {
     document.getElementById('results-error').style.display = 'none';
     handleSearch(lastSearchEvent);
   });
-  
+
   // Price alert modal
   const alertModal = document.getElementById('alert-modal');
   const closeModal = document.querySelector('.close-modal');
   const createAlertBtn = document.getElementById('create-alert-btn');
   const cancelBtn = document.getElementById('cancel-alert');
-  
+
   createAlertBtn.addEventListener('click', openAlertModal);
   closeModal.addEventListener('click', () => alertModal.style.display = 'none');
   cancelBtn.addEventListener('click', () => alertModal.style.display = 'none');
-  
+
   // Alert form submission
   const alertForm = document.getElementById('alert-form');
   alertForm.addEventListener('submit', handleCreateAlert);
-  
+
   // Close modal when clicking outside
   window.addEventListener('click', (event) => {
     if (event.target === alertModal) {
       alertModal.style.display = 'none';
     }
   });
-  
+
   // Initialize destination links
   initDestinationLinks();
 });
@@ -124,84 +124,25 @@ let filteredFlights = [];
 let currentAirlines = [];
 
 // Handle search form submission
-function handleSearch(event) {
-  if (event) {
-    event.preventDefault();
-    lastSearchEvent = event;
-  }
-  
-  // Get search parameters
-  const originInput = document.getElementById('origin');
-  const destinationInput = document.getElementById('destination');
-  
-  // Extract airport codes from inputs
-  let originCode = originInput.dataset.code || '';
-  let destinationCode = destinationInput.dataset.code || '';
-  
-  // If no airport code found in the dataset (from autocomplete), try to extract from the input value
-  if (!originCode) {
-    const originMatch = originInput.value.match(/\(([A-Z]{3})\)/);
-    originCode = originMatch ? originMatch[1] : originInput.value.toUpperCase();
-  }
-  
-  if (!destinationCode) {
-    const destMatch = destinationInput.value.match(/\(([A-Z]{3})\)/);
-    destinationCode = destMatch ? destMatch[1] : destinationInput.value.toUpperCase();
-  }
-  
-  // Get price range
-  const minPrice = document.getElementById('min-price').value;
-  const maxPrice = document.getElementById('max-price').value;
-  
-  // Validate inputs
-  if (!originCode || !destinationCode) {
-    alert('Please select valid origin and destination airports');
-    return;
-  }
-  
-  if (originCode === destinationCode) {
-    alert('Origin and destination cannot be the same');
-    return;
-  }
-  
-  if (parseInt(minPrice) >= parseInt(maxPrice)) {
-    alert('Minimum price must be less than maximum price');
-    return;
-  }
-  
-  lastSearchParams = { 
-    origin: originCode, 
-    destination: destinationCode, 
-    minPrice, 
-    maxPrice,
-    originCity: getAirportCity(originCode),
-    destinationCity: getAirportCity(destinationCode)
-  };
-  
-  // Show loader, hide other elements
-  document.getElementById('search-loader').style.display = 'block';
-  document.getElementById('no-results-message').style.display = 'none';
-  document.getElementById('results-error').style.display = 'none';
-  document.getElementById('results-content').style.display = 'none';
-  
-  // Make a fetch request to the API
-  fetch(`/api/flights?origin=${originCode}&destination=${destinationCode}&minPrice=${minPrice}&maxPrice=${maxPrice}`)
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      return response.json();
-    })
-    .then(data => {
-      currentFlights = data.flights;
-      processSearchResults();
-    })
-    .catch(error => {
-      console.error('Error fetching flights:', error);
-      document.getElementById('search-loader').style.display = 'none';
-      document.getElementById('results-error').style.display = 'block';
-    });
-}
+document.getElementById('flightSearchForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    try {
+        const response = await fetch('/api/flights');
+        const flights = await response.json();
+
+        const resultsDiv = document.getElementById('flightResults');
+        resultsDiv.innerHTML = flights.map(flight => `
+            <div class="flight-card">
+                <h3>${flight.airline}</h3>
+                <p>${flight.from} → ${flight.to}</p>
+                <p>₹${flight.price}</p>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Error fetching flights:', error);
+    }
+});
 
 // Helper function to get city name from airport code
 function getAirportCity(code) {
@@ -212,7 +153,7 @@ function getAirportCity(code) {
 // Process search results
 function processSearchResults() {
   document.getElementById('search-loader').style.display = 'none';
-  
+
   if (currentFlights.length === 0) {
     document.getElementById('no-results-message').style.display = 'block';
     document.getElementById('no-results-message').innerHTML = `
@@ -221,25 +162,25 @@ function processSearchResults() {
     `;
     return;
   }
-  
+
   // Show results section
   document.getElementById('results-content').style.display = 'block';
-  
+
   // Update airlines filter
   updateAirlineFilters();
-  
+
   // Set max price for slider
   const maxPrice = Math.max(...currentFlights.map(flight => flight.price));
   const roundedMaxPrice = Math.ceil(maxPrice / 500) * 500; // Round up to nearest 500
-  
+
   document.getElementById('price-range').max = roundedMaxPrice;
   document.getElementById('price-range').value = roundedMaxPrice;
   document.getElementById('max-price-label').textContent = `₹${roundedMaxPrice}`;
   document.getElementById('current-price-value').textContent = `₹${roundedMaxPrice}`;
-  
+
   // Apply initial filters
   applyFilters();
-  
+
   // Update results summary
   updateResultsSummary();
 }
@@ -248,25 +189,25 @@ function processSearchResults() {
 function updateAirlineFilters() {
   // Get unique airlines from flights
   currentAirlines = [...new Set(currentFlights.map(flight => flight.airline))];
-  
+
   // Create checkboxes for each airline
   const airlineFiltersEl = document.getElementById('airline-filters');
   airlineFiltersEl.innerHTML = '';
-  
+
   currentAirlines.forEach(airline => {
     const checkboxDiv = document.createElement('div');
     checkboxDiv.className = 'checkbox';
-    
+
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.id = `airline-${airline.toLowerCase().replace(/\s+/g, '-')}`;
     checkbox.checked = true;
     checkbox.addEventListener('change', applyFilters);
-    
+
     const label = document.createElement('label');
     label.htmlFor = checkbox.id;
     label.textContent = airline;
-    
+
     checkboxDiv.appendChild(checkbox);
     checkboxDiv.appendChild(label);
     airlineFiltersEl.appendChild(checkboxDiv);
@@ -274,7 +215,7 @@ function updateAirlineFilters() {
 }
 
 // Handle price slider change
-function handlePriceChange(event) {
+functionfunction handlePriceChange(event) {
   const value = event.target.value;
   document.getElementById('current-price-value').textContent = `₹${value}`;
   applyFilters();
@@ -284,34 +225,34 @@ function handlePriceChange(event) {
 function applyFilters() {
   // Get current price limit
   const priceLimit = parseInt(document.getElementById('price-range').value);
-  
+
   // Get selected airlines
   const selectedAirlines = currentAirlines.filter(airline => {
     const checkbox = document.getElementById(`airline-${airline.toLowerCase().replace(/\s+/g, '-')}`);
     return checkbox && checkbox.checked;
   });
-  
+
   // Get selected stop filters
   const nonStop = document.getElementById('non-stop').checked;
   const oneStop = document.getElementById('one-stop').checked;
   const twoStops = document.getElementById('two-plus-stops').checked;
-  
+
   // Create array of allowed stops
   const allowedStops = [];
   if (nonStop) allowedStops.push(0);
   if (oneStop) allowedStops.push(1);
   if (twoStops) allowedStops.push(2, 3, 4); // 2+ stops
-  
+
   // Filter flights
   filteredFlights = currentFlights.filter(flight => 
     flight.price <= priceLimit &&
     selectedAirlines.includes(flight.airline) &&
     allowedStops.includes(flight.stops)
   );
-  
+
   // Sort flights by price (lowest first)
   filteredFlights.sort((a, b) => a.price - b.price);
-  
+
   // Update results table
   updateResultsTable();
 }
@@ -320,9 +261,9 @@ function applyFilters() {
 function updateResultsTable() {
   const tableBody = document.getElementById('results-table-body');
   tableBody.innerHTML = '';
-  
+
   document.getElementById('results-count').textContent = `${filteredFlights.length} results found`;
-  
+
   if (filteredFlights.length === 0) {
     const row = document.createElement('tr');
     const cell = document.createElement('td');
@@ -333,11 +274,11 @@ function updateResultsTable() {
     tableBody.appendChild(row);
     return;
   }
-  
+
   // Add flights to table
   filteredFlights.forEach(flight => {
     const row = document.createElement('tr');
-    
+
     // Airline column
     const airlineCell = document.createElement('td');
     airlineCell.innerHTML = `
@@ -346,31 +287,31 @@ function updateResultsTable() {
         <span>${flight.airline}</span>
       </div>
     `;
-    
+
     // Departure column
     const departureCell = document.createElement('td');
     departureCell.innerHTML = `
       <div class="flight-time">${flight.departureTime}</div>
       <div class="flight-location">${flight.origin}</div>
     `;
-    
+
     // Arrival column
     const arrivalCell = document.createElement('td');
     arrivalCell.innerHTML = `
       <div class="flight-time">${flight.arrivalTime}</div>
       <div class="flight-location">${flight.destination}</div>
     `;
-    
+
     // Duration column
     const durationCell = document.createElement('td');
     durationCell.innerHTML = `
       <div>${flight.duration}</div>
       <div class="flight-location">${flight.stops === 0 ? 'Non-stop' : `${flight.stops} stop${flight.stops > 1 ? 's' : ''}`}</div>
     `;
-    
+
     // Price column
     const priceCell = document.createElement('td');
-    
+
     let priceChangeHtml = '';
     if (flight.priceChange !== 0) {
       const priceChangeClass = flight.priceChange < 0 ? 'price-drop' : 'price-rise';
@@ -381,12 +322,12 @@ function updateResultsTable() {
         </div>
       `;
     }
-    
+
     priceCell.innerHTML = `
-      <div class="flight-price">₹${flight.price}</div>
+      <div class="flight-price">₹${flight.price.toLocaleString('en-IN')}</div>
       ${priceChangeHtml}
     `;
-    
+
     // Actions column
     const actionsCell = document.createElement('td');
     actionsCell.innerHTML = `
@@ -395,7 +336,7 @@ function updateResultsTable() {
         <button class="btn btn-secondary btn-sm book-btn" data-flight-id="${flight.id}">Book</button>
       </div>
     `;
-    
+
     // Append cells to row
     row.appendChild(airlineCell);
     row.appendChild(departureCell);
@@ -403,28 +344,34 @@ function updateResultsTable() {
     row.appendChild(durationCell);
     row.appendChild(priceCell);
     row.appendChild(actionsCell);
-    
+
     // Append row to table
     tableBody.appendChild(row);
   });
-  
+
   // Add event listeners to track and book buttons
   document.querySelectorAll('.track-btn').forEach(btn => {
     btn.addEventListener('click', () => handleTrackPrice(parseInt(btn.getAttribute('data-flight-id'))));
   });
-  
+
   document.querySelectorAll('.book-btn').forEach(btn => {
-    btn.addEventListener('click', () => handleBookFlight(parseInt(btn.getAttribute('data-flight-id'))));
+    btn.addEventListener('click', (event) => {
+      const flightId = parseInt(event.target.getAttribute('data-flight-id'));
+      const flight = filteredFlights.find(f => f.id === flightId);
+      if (flight) {
+        handleBookFlight(flight);
+      }
+    });
   });
 }
 
 // Update results summary
 function updateResultsSummary() {
   const { origin, destination, minPrice, maxPrice } = lastSearchParams;
-  
+
   // Find lowest price
   const lowestPrice = Math.min(...currentFlights.map(flight => flight.price));
-  
+
   // Group flights by date and count
   const flightsByDate = {};
   currentFlights.forEach(flight => {
@@ -433,14 +380,14 @@ function updateResultsSummary() {
     }
     flightsByDate[flight.departureDate].push(flight);
   });
-  
+
   // Count unique dates
   const uniqueDates = Object.keys(flightsByDate).length;
-  
+
   // Calculate days range
   let earliestDate = null;
   let latestDate = null;
-  
+
   for (const dateStr in flightsByDate) {
     const date = new Date(dateStr);
     if (!earliestDate || date < earliestDate) {
@@ -450,20 +397,21 @@ function updateResultsSummary() {
       latestDate = date;
     }
   }
-  
+
   let dateRangeText = 'Multiple dates available';
   if (earliestDate && latestDate) {
     const daysDiff = Math.round((latestDate - earliestDate) / (1000 * 60 * 60 * 24));
     dateRangeText = `${uniqueDates} dates available over ${daysDiff} days`;
   }
-  
+
   // Simulate price drop percentage (in a real app this would be calculated from historical data)
   const priceDropPercentage = Math.floor(Math.random() * 25) + 5;
-  
+
   // Create summary HTML
   const summaryHtml = `
     <div class="summary-header">
       <h2>${origin} to ${destination}</h2>
+      <div class="flight-date">Date: ${formatDate(lastSearchParams.departureDate)}</div>
       <div class="summary-price">Price range: ₹${minPrice} - ₹${maxPrice}</div>
       <div class="summary-date">${dateRangeText}</div>
     </div>
@@ -473,7 +421,7 @@ function updateResultsSummary() {
       <span class="badge badge-warning">${priceDropPercentage}% Below Average</span>
     </div>
   `;
-  
+
   document.getElementById('results-summary').innerHTML = summaryHtml;
 }
 
@@ -483,18 +431,18 @@ function resetFilters() {
   const maxPrice = parseInt(document.getElementById('price-range').max);
   document.getElementById('price-range').value = maxPrice;
   document.getElementById('current-price-value').textContent = `₹${maxPrice}`;
-  
+
   // Reset airline checkboxes
   currentAirlines.forEach(airline => {
     const checkbox = document.getElementById(`airline-${airline.toLowerCase().replace(/\s+/g, '-')}`);
     if (checkbox) checkbox.checked = true;
   });
-  
+
   // Reset stops checkboxes
   document.getElementById('non-stop').checked = true;
   document.getElementById('one-stop').checked = true;
   document.getElementById('two-plus-stops').checked = false;
-  
+
   // Apply filters
   applyFilters();
 }
@@ -509,12 +457,12 @@ function handleTrackPrice(flightId) {
 function openAlertModal() {
   const modal = document.getElementById('alert-modal');
   const flightDetailsEl = document.getElementById('alert-flight-details');
-  
+
   // If no flight is selected, use the cheapest flight
   if (!selectedFlight && filteredFlights.length > 0) {
     selectedFlight = filteredFlights[0]; // Cheapest flight (already sorted)
   }
-  
+
   // If we have a selected flight, fill in the flight details
   if (selectedFlight) {
     flightDetailsEl.innerHTML = `
@@ -524,36 +472,36 @@ function openAlertModal() {
       </div>
       <div class="current-price-box">
         <div class="current-price-label">Current lowest price</div>
-        <div class="current-price-value">₹${selectedFlight.price}</div>
+        <div class="current-price-value">₹${selectedFlight.price.toLocaleString('en-IN')}</div>
       </div>
     `;
-    
+
     // Set default target price (10% lower than current price)
     const targetPrice = Math.floor(selectedFlight.price * 0.9);
     document.getElementById('target-price').value = targetPrice;
   }
-  
+
   modal.style.display = 'block';
 }
 
 // Handle create alert form submission
 function handleCreateAlert(event) {
   event.preventDefault();
-  
+
   if (!selectedFlight) {
     alert('Please select a flight first');
     return;
   }
-  
+
   const targetPrice = parseInt(document.getElementById('target-price').value);
   const email = document.getElementById('alert-email').value;
-  
+
   // Validate inputs
   if (isNaN(targetPrice) || targetPrice <= 0) {
     alert('Please enter a valid price');
     return;
   }
-  
+
   // Create alert data
   const alertData = {
     origin: selectedFlight.origin,
@@ -562,7 +510,7 @@ function handleCreateAlert(event) {
     targetPrice,
     email
   };
-  
+
   // Send data to server
   fetch('/api/price-alerts', {
     method: 'POST',
@@ -580,10 +528,10 @@ function handleCreateAlert(event) {
   .then(data => {
     // Show success message
     showNotification(`Price alert created! We'll notify you at ${email} when the price drops below ₹${targetPrice}.`);
-    
+
     // Close modal
     document.getElementById('alert-modal').style.display = 'none';
-    
+
     // Reset form
     document.getElementById('alert-form').reset();
     selectedFlight = null;
@@ -595,9 +543,19 @@ function handleCreateAlert(event) {
 }
 
 // Handle book flight button click
-function handleBookFlight(flightId) {
-  const flight = currentFlights.find(flight => flight.id === flightId);
-  showNotification(`Redirecting to booking page for ${flight.airline} flight from ${flight.origin} to ${flight.destination} for ₹${flight.price}...`);
+function handleBookFlight(flight) {
+  // Format the flight details for booking
+  const bookingUrl = `/booking?` + new URLSearchParams({
+    flightId: flight.id,
+    origin: flight.origin,
+    destination: flight.destination,
+    date: flight.departureDate,
+    price: flight.price,
+    airline: flight.airline
+  }).toString();
+
+  // Navigate to booking page
+  window.location.href = bookingUrl;
 }
 
 // Initialize destination links
@@ -605,11 +563,11 @@ function initDestinationLinks() {
   document.querySelectorAll('.text-link[data-destination]').forEach(link => {
     link.addEventListener('click', (event) => {
       event.preventDefault();
-      
+
       // Set search form values
       document.getElementById('origin').value = 'DEL'; // Default origin as Delhi
       document.getElementById('destination').value = link.getAttribute('data-destination');
-      
+
       // Scroll to search form
       document.querySelector('.hero').scrollIntoView({ behavior: 'smooth' });
     });
@@ -628,7 +586,7 @@ function showNotification(message) {
   const notification = document.createElement('div');
   notification.className = 'notification';
   notification.textContent = message;
-  
+
   // Style notification
   notification.style.position = 'fixed';
   notification.style.bottom = '20px';
@@ -642,21 +600,21 @@ function showNotification(message) {
   notification.style.opacity = '0';
   notification.style.transform = 'translateY(20px)';
   notification.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-  
+
   // Add to body
   document.body.appendChild(notification);
-  
+
   // Trigger animation
   setTimeout(() => {
     notification.style.opacity = '1';
     notification.style.transform = 'translateY(0)';
   }, 10);
-  
+
   // Remove after 5 seconds
   setTimeout(() => {
     notification.style.opacity = '0';
     notification.style.transform = 'translateY(20px)';
-    
+
     setTimeout(() => {
       document.body.removeChild(notification);
     }, 300);

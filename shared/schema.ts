@@ -92,3 +92,18 @@ export type InsertPriceHistory = z.infer<typeof insertPriceHistorySchema>;
 export type PriceHistory = typeof priceHistory.$inferSelect;
 
 export type FlightSearch = z.infer<typeof flightSearchSchema>;
+
+export interface Flight {
+  id: string;
+  origin: string;
+  destination: string;
+  airline: string;
+  departureDate: string;
+  departureTime: string;
+  arrivalTime: string;
+  duration: number;
+  price: number;
+  stops: number;
+  priceGroup: string;
+  priceCategory: 'low' | 'medium' | 'high';
+}

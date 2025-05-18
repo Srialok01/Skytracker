@@ -289,9 +289,6 @@ const Home: React.FC = () => {
         )}
       </div>
 
-      {/* Popular Destinations */}
-      <DestinationFeature />
-
       {/* Price Alert Section */}
       <PriceAlertSection onCreateAlert={handleCreateAlert} />
 

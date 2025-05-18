@@ -37,8 +37,8 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
         <h4 className="font-medium mb-3">Price Range</h4>
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
-            <span>$0</span>
-            <span>${maxPrice}</span>
+            <span>₹0</span>
+            <span>₹{maxPrice}</span>
           </div>
           <Slider
             defaultValue={[priceRange]}
@@ -48,7 +48,7 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
             className="w-full h-2"
           />
           <div className="text-center text-sm">
-            Max price: <span className="font-medium">${priceRange}</span>
+            Max price: <span className="font-medium">₹{priceRange}</span>
           </div>
         </div>
       </div>

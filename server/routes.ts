@@ -6,163 +6,81 @@ import axios from "axios";
 import { ZodError } from "zod";
 import cron from "node-cron";
 
-// Skyscraper API URL and key
-const SKYSCRAPER_API_KEY = process.env.SKYSCRAPER_API_KEY || "demo-key"; 
-const SKYSCRAPER_API_URL = "https://api.skyscraper.com/v1"; // Replace with actual API URL
+const SKYSCANNER_API_KEY = "bf3c135da3msh6952221c554c73cp17d2a3jsnfbdcbceb0dc8";
+const SKYSCANNER_API_URL = "https://sky-scrapper.p.rapidapi.com/api/v1/flights";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
-  // Fetch flight prices from Skyscraper API
-  async function fetchFlightPrices(origin: string, destination: string, date: string) {
+  // Fetch real flight data from Skyscanner API
+  async function fetchFlights(origin: string, destination: string, date: string) {
     try {
-      // This is a placeholder for the actual Skyscraper API call
-      const response = await axios.get(`${SKYSCRAPER_API_URL}/flights`, {
-        params: {
-          api_key: SKYSCRAPER_API_KEY,
-          origin,
-          destination,
-          date,
+      const response = await axios.get(`${SKYSCANNER_API_URL}/getPriceCalendar`, {
+        headers: {
+          'X-RapidAPI-Key': SKYSCANNER_API_KEY,
+          'X-RapidAPI-Host': 'sky-scrapper.p.rapidapi.com'
         },
+        params: {
+          originSkyId: 'VNS',
+          destinationSkyId: 'HYD', 
+          fromDate: '2025-05-18',
+          currency: 'INR'
+        }
       });
-      return response.data;
+
+      const flightData = response.data.data.flights;
+      if (!flightData || !flightData.days || !Array.isArray(flightData.days)) {
+        return [];
+      }
+
+      // Get price group labels mapping
+      const priceLabels = flightData.groups.reduce((acc, group) => {
+        acc[group.id] = group.label;
+        return acc;
+      }, {});
+
+      return flightData.days.map(flight => ({
+        id: Math.random().toString(36).substr(2, 9),
+        origin,
+        destination,
+        airline: 'Multiple Airlines',
+        departureDate: flight.day,
+        departureTime: `${flight.day}T00:00:00`,
+        arrivalTime: `${flight.day}T23:59:59`,
+        duration: 24 * 60, // 24 hours in minutes
+        price: Math.round(flight.price * 100) / 100,
+        stops: 0,
+        priceGroup: priceLabels[flight.group] || flight.group,
+        priceCategory: flight.group
+      }));
     } catch (error) {
-      console.error("Error fetching flights from Skyscraper API:", error);
+      console.error("Error fetching from Skyscanner:", error);
       throw error;
     }
   }
 
-  // Mock function to simulate API response while developing
-  function simulateSkyscraperApiResponse(origin: string, destination: string, date: string) {
-    // Use Indian airlines to match the Indian locations focus
-    const airlines = ["Air India", "IndiGo", "SpiceJet", "Vistara", "GoAir", "AirAsia India", "Alliance Air"];
-    const flightCount = Math.floor(Math.random() * 10) + 5;
-    const flights = [];
-
-    for (let i = 0; i < flightCount; i++) {
-      const airline = airlines[Math.floor(Math.random() * airlines.length)];
-      // Generate realistic prices in rupees (₹) for Indian flights
-      const price = Math.floor(Math.random() * 8000) + 2000; // ₹2000 to ₹10000 range
-      const priceChange = Math.floor(Math.random() * 1000) - 500;
-      const hours = Math.floor(Math.random() * 3) + 5;
-      const minutes = Math.floor(Math.random() * 45);
-      const duration = `${hours}h ${minutes}m`;
-      const stops = Math.floor(Math.random() * 2);
-
-      // Generate departure and arrival times
-      const depHour = Math.floor(Math.random() * 12) + 1;
-      const depMinute = Math.floor(Math.random() * 60);
-      const depTime = `${depHour.toString().padStart(2, '0')}:${depMinute.toString().padStart(2, '0')} ${depHour < 8 ? 'AM' : 'PM'}`;
-      
-      const arrHour = (depHour + hours) % 12 || 12;
-      const arrMinute = (depMinute + minutes) % 60;
-      const arrTime = `${arrHour.toString().padStart(2, '0')}:${arrMinute.toString().padStart(2, '0')} ${(depHour + hours) < 12 ? 'AM' : 'PM'}`;
-
-      flights.push({
-        id: i + 1,
-        origin,
-        destination,
-        departureDate: new Date(date),
-        airline,
-        price,
-        priceChange,
-        duration,
-        stops,
-        departureTime: depTime,
-        arrivalTime: arrTime,
-        lastChecked: new Date(),
-      });
-    }
-
-    return { flights };
-  }
-
-  // Flight search route
   app.get("/api/flights", async (req, res) => {
     try {
-      const { origin, destination, minPrice, maxPrice } = req.query;
-      
-      // Set default date to today if not provided
-      const today = new Date().toISOString().split('T')[0];
-      
-      // Validate query parameters
-      const validatedData = flightSearchSchema.parse({
-        origin,
-        destination,
-        minPrice,
-        maxPrice,
-        departureDate: today, // Use today as default for backend compatibility
+      const validatedData = flightSearchSchema.parse(req.query);
+      const flights = await fetchFlights(
+        validatedData.origin,
+        validatedData.destination,
+        validatedData.departureDate || new Date().toISOString().split('T')[0]
+      );
+
+      // Filter by price range if specified
+      const filteredFlights = flights.filter(flight => {
+        if (validatedData.minPrice && flight.price < validatedData.minPrice) return false;
+        if (validatedData.maxPrice && flight.price > validatedData.maxPrice) return false;
+        return true;
       });
 
-      // First check if we have cached flight data
-      const cachedFlights = await storage.searchFlights(
-        validatedData.origin, 
-        validatedData.destination, 
-        validatedData.departureDate || today
-      );
-
-      if (cachedFlights.length > 0) {
-        // Filter flights by price range if specified
-        const filteredFlights = cachedFlights.filter(flight => {
-          if (validatedData.minPrice && flight.price < validatedData.minPrice) {
-            return false;
-          }
-          if (validatedData.maxPrice && flight.price > validatedData.maxPrice) {
-            return false;
-          }
-          return true;
-        });
-        
-        return res.json({ flights: filteredFlights });
-      }
-
-      // In a real implementation, you would call the Skyscraper API here
-      // For development, use a simulated response
-      // const apiResponse = await fetchFlightPrices(validatedData.origin, validatedData.destination, validatedData.departureDate);
-      // Simulate API response with random flights
-      const apiResponse = simulateSkyscraperApiResponse(
-        validatedData.origin, 
-        validatedData.destination, 
-        validatedData.departureDate || today
-      );
-      
-      // Filter by price range if specified
-      if (validatedData.minPrice || validatedData.maxPrice) {
-        apiResponse.flights = apiResponse.flights.filter(flight => {
-          if (validatedData.minPrice && flight.price < validatedData.minPrice) {
-            return false;
-          }
-          if (validatedData.maxPrice && flight.price > validatedData.maxPrice) {
-            return false;
-          }
-          return true;
-        });
-      }
-
-      // Store flight data
-      const storedFlights = [];
-      for (const flight of apiResponse.flights) {
-        const storedFlight = await storage.createFlight(flight);
-        storedFlights.push(storedFlight);
-
-        // Also store initial price history
-        await storage.addPriceHistory({
-          origin: flight.origin,
-          destination: flight.destination,
-          departureDate: flight.departureDate,
-          airline: flight.airline,
-          price: flight.price,
-          timestamp: new Date(),
-        });
-      }
-
-      res.json({ flights: storedFlights });
+      res.json({ flights: filteredFlights });
     } catch (error) {
       if (error instanceof ZodError) {
         res.status(400).json({ message: "Invalid search parameters", errors: error.errors });
       } else {
-        console.error("Error searching flights:", error);
-        res.status(500).json({ message: "Failed to fetch flight data" });
+        res.status(500).json({ message: "Error fetching flights" });
       }
     }
   });
@@ -171,10 +89,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/price-history", async (req, res) => {
     try {
       const { origin, destination } = req.query;
-      
+
       // Set default date to today if not provided
       const today = new Date().toISOString().split('T')[0];
-      
+
       // Validate query parameters
       const validatedData = flightSearchSchema.parse({
         origin,
@@ -202,7 +120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Sort each airline's history by timestamp
       Object.keys(historyByAirline).forEach(airline => {
-        historyByAirline[airline].sort((a, b) => 
+        historyByAirline[airline].sort((a, b) =>
           new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
         );
       });
@@ -222,7 +140,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/price-alerts", async (req, res) => {
     try {
       const alertData = insertPriceAlertSchema.parse(req.body);
-      
+
       const priceAlert = await storage.createPriceAlert({
         ...alertData,
         createdAt: new Date(),
@@ -243,7 +161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/price-alerts", async (req, res) => {
     try {
       const { email } = req.query;
-      
+
       if (!email || typeof email !== 'string') {
         return res.status(400).json({ message: "Email is required" });
       }
@@ -260,7 +178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/price-alerts/:id", async (req, res) => {
     try {
       const alertId = parseInt(req.params.id);
-      
+
       if (isNaN(alertId)) {
         return res.status(400).json({ message: "Invalid alert ID" });
       }
@@ -279,7 +197,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log('Running price alert check...');
     try {
       const activeAlerts = await storage.getPriceAlerts();
-      
+
       for (const alert of activeAlerts) {
         // Check current price
         const flights = await storage.searchFlights(
@@ -287,18 +205,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           alert.destination,
           alert.departureDate.toString()
         );
-        
+
         // Find the lowest current price
-        const lowestPrice = flights.length > 0 
-          ? Math.min(...flights.map(f => f.price)) 
+        const lowestPrice = flights.length > 0
+          ? Math.min(...flights.map(f => f.price))
           : Infinity;
-        
+
         // Check if price is below target
         if (lowestPrice <= alert.targetPrice) {
           // In a real app, send email notification here
           console.log(`Price alert triggered for ${alert.email}: ${alert.origin} to ${alert.destination}`);
           console.log(`Current lowest price: $${lowestPrice}, Target: $${alert.targetPrice}`);
-          
+
           // Deactivate the alert after it's triggered
           await storage.deactivatePriceAlert(alert.id);
         }
