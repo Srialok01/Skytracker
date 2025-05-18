@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="500" height="300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="skyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#22c55e" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="500" height="300" fill="url(#skyGradient)" />
+  
+  <!-- Vidhana Soudha -->
+  <rect x="200" y="140" width="100" height="100" fill="#334155" />
+  <rect x="230" y="100" width="40" height="40" fill="#475569" />
+  <rect x="240" y="80" width="20" height="20" fill="#64748b" />
+  <rect x="190" y="160" width="10" height="80" fill="#475569" />
+  <rect x="300" y="160" width="10" height="80" fill="#475569" />
+  <rect x="180" y="240" width="140" height="10" fill="#1e293b" />
+  
+  <!-- Gardens and trees -->
+  <circle cx="100" cy="220" r="40" fill="#166534" />
+  <circle cx="400" cy="220" r="40" fill="#166534" />
+  <circle cx="90" cy="200" r="20" fill="#15803d" />
+  <circle cx="110" cy="190" r="15" fill="#15803d" />
+  <circle cx="390" cy="200" r="20" fill="#15803d" />
+  <circle cx="410" cy="190" r="15" fill="#15803d" />
+  
+  <!-- Silicon Valley buildings -->
+  <rect x="30" y="150" width="30" height="70" fill="#0284c7" />
+  <rect x="70" y="170" width="20" height="50" fill="#0ea5e9" />
+  <rect x="440" y="150" width="30" height="70" fill="#0284c7" />
+  <rect x="410" y="170" width="20" height="50" fill="#0ea5e9" />
+  
+  <!-- Window patterns -->
+  <rect x="35" y="160" width="5" height="5" fill="#7dd3fc" />
+  <rect x="45" y="160" width="5" height="5" fill="#7dd3fc" />
+  <rect x="35" y="170" width="5" height="5" fill="#7dd3fc" />
+  <rect x="45" y="170" width="5" height="5" fill="#7dd3fc" />
+  <rect x="35" y="180" width="5" height="5" fill="#7dd3fc" />
+  <rect x="45" y="180" width="5" height="5" fill="#7dd3fc" />
+  <rect x="35" y="190" width="5" height="5" fill="#7dd3fc" />
+  <rect x="45" y="190" width="5" height="5" fill="#7dd3fc" />
+  
+  <rect x="445" y="160" width="5" height="5" fill="#7dd3fc" />
+  <rect x="455" y="160" width="5" height="5" fill="#7dd3fc" />
+  <rect x="445" y="170" width="5" height="5" fill="#7dd3fc" />
+  <rect x="455" y="170" width="5" height="5" fill="#7dd3fc" />
+  <rect x="445" y="180" width="5" height="5" fill="#7dd3fc" />
+  <rect x="455" y="180" width="5" height="5" fill="#7dd3fc" />
+  <rect x="445" y="190" width="5" height="5" fill="#7dd3fc" />
+  <rect x="455" y="190" width="5" height="5" fill="#7dd3fc" />
+  
+  <!-- Ground -->
+  <rect x="0" y="250" width="500" height="50" fill="#0f172a" />
+  
+  <!-- Text -->
+  <text x="250" y="280" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="middle" fill="white">BANGALORE</text>
+</svg>

@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkyWatch India - Flight Price Tracker</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header>
+    <nav>
+      <div class="container">
+        <div class="logo">
+          <span class="logo-icon">✈️</span>
+          <h1>SkyWatch India</h1>
+        </div>
+        <ul class="nav-links">
+          <li><a href="#" class="active">Home</a></li>
+          <li><a href="#price-alerts">Price Alerts</a></li>
+          <li><a href="#compare">Compare</a></li>
+          <li><a href="#about">About</a></li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <div class="container">
+      <div class="hero-content">
+        <h1>Track Flight Prices Across India</h1>
+        <p>Monitor fare prices in real-time and receive alerts when prices drop for your desired destinations.</p>
+      </div>
+      <div class="search-box">
+        <form id="flight-search-form">
+          <div class="search-row">
+            <div class="form-group">
+              <label for="origin">From</label>
+              <input type="text" id="origin" placeholder="City or airport (e.g., Delhi)" list="origin-list" autocomplete="off" required>
+              <datalist id="origin-list">
+                <option value="Delhi (DEL)"></option>
+                <option value="Mumbai (BOM)"></option>
+                <option value="Bangalore (BLR)"></option>
+                <option value="Hyderabad (HYD)"></option>
+                <option value="Chennai (MAA)"></option>
+                <option value="Kolkata (CCU)"></option>
+                <option value="Goa (GOI)"></option>
+                <option value="Kochi (COK)"></option>
+                <option value="Pune (PNQ)"></option>
+                <option value="Ahmedabad (AMD)"></option>
+              </datalist>
+            </div>
+            <div class="form-group">
+              <label for="destination">To</label>
+              <input type="text" id="destination" placeholder="City or airport (e.g., Mumbai)" list="destination-list" autocomplete="off" required>
+              <datalist id="destination-list">
+                <option value="Delhi (DEL)"></option>
+                <option value="Mumbai (BOM)"></option>
+                <option value="Bangalore (BLR)"></option>
+                <option value="Hyderabad (HYD)"></option>
+                <option value="Chennai (MAA)"></option>
+                <option value="Kolkata (CCU)"></option>
+                <option value="Goa (GOI)"></option>
+                <option value="Kochi (COK)"></option>
+                <option value="Pune (PNQ)"></option>
+                <option value="Ahmedabad (AMD)"></option>
+              </datalist>
+            </div>
+            <div class="form-group">
+              <label for="min-price">Min Price (₹)</label>
+              <input type="number" id="min-price" placeholder="Min price" value="1000" min="0" required>
+            </div>
+            <div class="form-group">
+              <label for="max-price">Max Price (₹)</label>
+              <input type="number" id="max-price" placeholder="Max price" value="10000" min="0" required>
+            </div>
+            <button type="submit" id="search-btn" class="btn btn-primary">Search Flights</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section id="results" class="section">
+    <div class="container">
+      <div class="loader" id="search-loader">
+        <div class="spinner"></div>
+        <p>Searching for the best flight prices...</p>
+      </div>
+      
+      <div id="no-results-message" class="message-box">
+        <p>Enter your flight details above to search for prices.</p>
+      </div>
+      
+      <div id="results-error" class="message-box error-box">
+        <p>Unable to fetch flight prices. Please check your connection and try again.</p>
+        <button id="retry-btn" class="btn">Try Again</button>
+      </div>
+      
+      <div id="results-content" class="results-container">
+        <div class="results-summary" id="results-summary">
+          <!-- Summary will be populated by JavaScript -->
+        </div>
+        
+        <div class="filters-and-results">
+          <div class="filters-panel">
+            <h3>Filters</h3>
+            
+            <div class="filter-group">
+              <h4>Price Range</h4>
+              <div class="price-slider">
+                <div class="slider-labels">
+                  <span>₹0</span>
+                  <span id="max-price-label">₹20,000</span>
+                </div>
+                <input type="range" id="price-range" min="0" max="20000" step="500" value="20000">
+                <div class="current-price">
+                  Max price: <span id="current-price-value">₹20,000</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="filter-group">
+              <h4>Airlines</h4>
+              <div id="airline-filters">
+                <!-- Will be populated by JavaScript -->
+              </div>
+            </div>
+            
+            <div class="filter-group">
+              <h4>Stops</h4>
+              <div class="checkbox-group">
+                <div class="checkbox">
+                  <input type="checkbox" id="non-stop" checked>
+                  <label for="non-stop">Non-stop</label>
+                </div>
+                <div class="checkbox">
+                  <input type="checkbox" id="one-stop" checked>
+                  <label for="one-stop">1 Stop</label>
+                </div>
+                <div class="checkbox">
+                  <input type="checkbox" id="two-plus-stops">
+                  <label for="two-plus-stops">2+ Stops</label>
+                </div>
+              </div>
+            </div>
+            
+            <button id="reset-filters" class="btn btn-outline">Reset Filters</button>
+          </div>
+          
+          <div class="results-table-container">
+            <div class="results-table-header">
+              <h3>Available Flights</h3>
+              <p id="results-count">0 results found</p>
+            </div>
+            
+            <table class="results-table" id="results-table">
+              <thead>
+                <tr>
+                  <th>Airline</th>
+                  <th>Departure</th>
+                  <th>Arrival</th>
+                  <th>Duration</th>
+                  <th>Price</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="results-table-body">
+                <!-- Will be populated by JavaScript -->
+              </tbody>
+            </table>
+            
+            <div id="pagination" class="pagination">
+              <!-- Will be populated by JavaScript -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section bg-light" id="popular-destinations">
+    <div class="container">
+      <h2 class="section-title">Popular Destinations in India</h2>
+      <div class="destinations-grid">
+        <div class="destination-card">
+          <div class="destination-image" style="background-image: url('images/mumbai.svg')">
+            <div class="destination-overlay">
+              <h3>Mumbai</h3>
+              <div class="destination-info">
+                <span>Flights from <strong>₹2,499</strong></span>
+                <a href="#" class="text-link" data-destination="BOM">View Deals</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="destination-card">
+          <div class="destination-image" style="background-image: url('images/delhi.svg')">
+            <div class="destination-overlay">
+              <h3>Delhi</h3>
+              <div class="destination-info">
+                <span>Flights from <strong>₹2,799</strong></span>
+                <a href="#" class="text-link" data-destination="DEL">View Deals</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="destination-card">
+          <div class="destination-image" style="background-image: url('images/bangalore.svg')">
+            <div class="destination-overlay">
+              <h3>Bangalore</h3>
+              <div class="destination-info">
+                <span>Flights from <strong>₹2,199</strong></span>
+                <a href="#" class="text-link" data-destination="BLR">View Deals</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="destination-card">
+          <div class="destination-image" style="background-image: url('images/goa.svg')">
+            <div class="destination-overlay">
+              <h3>Goa</h3>
+              <div class="destination-info">
+                <span>Flights from <strong>₹3,599</strong></span>
+                <a href="#" class="text-link" data-destination="GOI">View Deals</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section cta-section" id="price-alerts">
+    <div class="container">
+      <div class="cta-container">
+        <div class="cta-content">
+          <h2>Never Miss a Price Drop</h2>
+          <p>Set up price alerts and we'll notify you when the fare drops for your desired routes. Save up to 40% on your next flight!</p>
+          <div class="cta-buttons">
+            <button id="create-alert-btn" class="btn btn-light">Create Alert</button>
+            <button class="btn btn-outline-light">Learn More</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="about">
+    <div class="container">
+      <div class="about-content">
+        <h2 class="section-title">About SkyWatch India</h2>
+        <p>SkyWatch India is your trusted companion for tracking flight prices and finding the best deals across India. We use advanced technology to monitor flight prices in real-time, providing you with historical data, price predictions, and instant alerts.</p>
+        
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon">🔍</div>
+            <h3>Search</h3>
+            <p>Enter your origin, destination, and dates to search for flights across multiple Indian airlines.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3>Track</h3>
+            <p>Our system continuously monitors price changes and collects historical pricing data.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🔔</div>
+            <h3>Alert</h3>
+            <p>Set your target price and receive alerts when fares drop below your threshold.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Price Alert Modal -->
+  <div id="alert-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Set Price Alert</h2>
+        <span class="close-modal">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div id="alert-flight-details" class="flight-details">
+          <!-- Will be populated by JavaScript -->
+        </div>
+        <form id="alert-form">
+          <div class="form-group">
+            <label for="target-price">Alert me when price drops below</label>
+            <div class="price-input">
+              <span class="price-symbol">₹</span>
+              <input type="number" id="target-price" min="1" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="alert-email">Email address for alerts</label>
+            <input type="email" id="alert-email" placeholder="your@email.com" required>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" id="create-alert-submit" class="btn btn-primary">Create Alert</button>
+            <button type="button" id="cancel-alert" class="btn btn-outline">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-section">
+          <div class="logo">
+            <span class="logo-icon">✈️</span>
+            <h2>SkyWatch India</h2>
+          </div>
+          <p>Track flight prices in real-time and find the best deals for your travel needs within India.</p>
+          <div class="social-links">
+            <a href="#" class="social-link">Facebook</a>
+            <a href="#" class="social-link">Twitter</a>
+            <a href="#" class="social-link">Instagram</a>
+          </div>
+        </div>
+        <div class="footer-section">
+          <h3>Quick Links</h3>
+          <ul class="footer-links">
+            <li><a href="#">Home</a></li>
+            <li><a href="#price-alerts">Price Alerts</a></li>
+            <li><a href="#compare">Compare Flights</a></li>
+            <li><a href="#">Popular Routes</a></li>
+            <li><a href="#">Travel Guides</a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h3>Support</h3>
+          <ul class="footer-links">
+            <li><a href="#">Help Center</a></li>
+            <li><a href="#">FAQ</a></li>
+            <li><a href="#">Contact Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Service</a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h3>Newsletter</h3>
+          <p>Subscribe to our newsletter for the latest flight deals and travel tips.</p>
+          <form class="newsletter-form">
+            <input type="email" placeholder="Your email address" required>
+            <button type="submit" class="btn btn-secondary">Subscribe</button>
+          </form>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2023 SkyWatch India. All rights reserved.</p>
+        <div class="footer-bottom-links">
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms of Service</a>
+          <a href="#">Cookie Policy</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <script src="autocomplete.js"></script>
+</body>
+</html>
